@@ -1,17 +1,34 @@
 #!/bin/bash
-# My Bash Beginner Script for Lab 1
 
-# Getting the FQDN from the Machine
-echo 'FQDN:' "$(hostname --fqdn)"
+# source environment variables
+source /etc/os-release
 
-# Getting the OS Name, Version, and Linux Distro in Use
-echo "Host Information:"
-hostnamectl
+# gather my data for my report
+fqdn=$(hostname --fqdn)
+osName=$NAME
+osVersion=$VERSION
+ipAddress=$(hostname -I)
+freeSpace=$(df -h /dev/sda3)
 
-# Outputting any IP address that are not on the 127 network
-echo 'IP Addresses:'
-hostname -I
+# print a blank line before script output
+echo
 
-# Outputting the amount of space available in only the root filesystem, displayed as a human-readable friendly number
-echo 'Root Filesystem Status:'
-df -h /dev/sda3
+# title for report
+echo 'Report for: '$(hostname)
+echo '========================'
+
+# display system fully qualified domain name
+echo "FQDN: $fqdn"
+
+# display os name and version
+echo "Operating System name and version: $osName $osVersion"
+
+# display IP address
+echo "IP Address: $ipAddress"
+
+# display root filesystem free space
+echo "Root Filesystem Free Space: $freeSpace"
+
+# end script with separator and blank line
+echo '========================'
+echo
