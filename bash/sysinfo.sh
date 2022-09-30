@@ -8,13 +8,13 @@ fqdn=$(hostname --fqdn)
 osName=$NAME
 osVersion=$VERSION
 ipAddress=$(hostname -I)
-freeSpace=$(df -h /dev/sda3)
+freeSpace=$(df -h | grep -w "/" | awk '{print $4}')
 
 # print a blank line before script output
 echo
 
 # title for report
-echo 'Report for: '$(hostname)
+echo "Report for: $(hostname)"
 echo '========================'
 
 # display system fully qualified domain name
