@@ -1,34 +1,34 @@
 #!/bin/bash
 
-# source environment variables
+# This sources the directory with environment variables to use
 source /etc/os-release
 
 # gather my data for my report
+# This collects the hostname and fqdn of the computer
+simpleHostname=$(hostname)
 fqdn=$(hostname --fqdn)
+
+# This uses the $NAME and $VERSION variable from os-release
 osName=$NAME
 osVersion=$VERSION
+
+# This is the ip address of the host
 ipAddress=$(hostname -I)
+
+# This will show only available space on root filesystem.
+# grep -w "/" will grab the line with the root filesystem
+# awk print $4 will grab the 4th column; available space
 freeSpace=$(df -h | grep -w "/" | awk '{print $4}')
 
-# print a blank line before script output
-echo
+# print out the report using the gathered data
+cat <<EOF
 
-# title for report
-echo "Report for: $(hostname)"
-echo '========================'
+Report for: $simpleHostname
+=======================
+FQDN: $fqdn
+Operating System name and version: $osName $osVersion
+IP Address: $ipAddress
+Root Filesystem Free Space: $freeSpace
+=======================
 
-# display system fully qualified domain name
-echo "FQDN: $fqdn"
-
-# display os name and version
-echo "Operating System name and version: $osName $osVersion"
-
-# display IP address
-echo "IP Address: $ipAddress"
-
-# display root filesystem free space
-echo "Root Filesystem Free Space: $freeSpace"
-
-# end script with separator and blank line
-echo '========================'
-echo
+EOF
