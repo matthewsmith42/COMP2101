@@ -18,7 +18,7 @@ fi
 
 # check to see if lxdbr0 inerface exists
 # Listing all interfaces and searching for lxdbr0
-ifconfig | grep "lxdbr0" > /dev/null
+ifconfig | grep -w "lxdbr0" > /dev/null
 
 # if the test value of grep "lxdbr0" is not 0, need to run lxd init --auto
 if [ $? -ne 0 ]; then
@@ -29,6 +29,15 @@ if [ $? -ne 0 ]; then
 	echo "Failed to start interactive configuration process"
 	exit 1
 	fi
+else
+	echo "lxdbr0 interface found on machine"
 fi
 
-# Launch a container running Ubuntu 20.04 server named COMP2101-F22
+# Launch a container running Ubuntu 20.04 server named COMP2101-F22 if necessary
+lxc launch ubuntu: 20.04 COMP2101-F22
+
+# Add or update the /etc/hosts for hostname COMP2101-F22 with the container's current IP address if neccessary
+
+# Install Apache2 in the container if necessary
+
+# Retrieve the default web page from the container's web service with curl htp://COMP2101-F22 and notify the user of success or failure
