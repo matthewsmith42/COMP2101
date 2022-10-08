@@ -22,7 +22,7 @@ ifconfig | grep -w "lxdbr0" > /dev/null
 
 # if the test value of grep "lxdbr0" is not 0, need to run lxd init --auto
 if [ $? -ne 0 ]; then
-	echo "You do not have the required interface. Starting the interactive configuration process"
+	echo "Creating lxdbr0 interface"
 	lxd init --auto
 	if [ $? -ne 0 ]; then
 		# failed to start interactive configuration process
@@ -50,6 +50,8 @@ fi
 # old command that worked: containerIP=$(lxc list | awk 'FNR == 4 {print $6}')
 
 # Grab the line with the container named COMP2101-F22, print the 6th object (IP address, and store it in a variable)
+# On first-time running the script, the container IP has not yet been configured so awk picks the 6th element undesired. Setting a sleep timer for DHCP to give container an IP.
+sleep 5
 containerIP=$(lxc list | grep -w "COMP2101-F22" | awk '{print $6}')
 
 # containerHostname stores the hostname of the container in a variable
@@ -66,7 +68,7 @@ grep "$containerInfo" /etc/hosts > /dev/null
 
 # If container is not in /etc/hosts, add it to the first line using the $containerInfo
 if [ $? -ne 0 ]; then
-	echo "Adding the container COMP2101-F22 to the first line of /etc/hosts. Elevated permissions may be required:"
+	echo "Adding the container COMP2101-F22 to the first line of /etc/hosts. Elevated permissions may be required."
 	sudo chmod 646 /etc/hosts
 	sudo sed -i "1i$containerInfo" /etc/hosts
 fi
