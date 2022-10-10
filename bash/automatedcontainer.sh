@@ -1,90 +1,140 @@
 #!/bin/bash
 
-# this is my testing script for playing with containers
+simpleHostname=$(hostname)
 
-# use the which command to see if lxd exists on the system already
+ cat <<EOF
+
+Installation on: $simpleHostname
+===============================================================
+
+:::This is a script that automates the installation of a container named COMP2101-F22 with an Apache Web Server:::
+
+:::Press Crtl+C to stop at anytime:::
+
+Good Luck...
+
+===============================================================
+
+EOF
+
+echo "This script will automate the installation process of a container named COMP2101-F22 with an Apache Web Server"
+echo
+
+# Use the which command to see if lxd exists on the system
 which lxd > /dev/null
 if [ $? -ne 0 ]; then
-#need to install lxd
-	echo "Installing lxd - you may need to input password"
+# Need to install lxd
+	echo "Installing lxd... (Password may be required)"
 	sudo snap install lxd
 	if [ $? -ne 0 ]; then
-	#failed to install lxd - exit with error message and status
-	echo "Failed to install lxd"
+	# Failed to install lxd - exit with error message and status
+	echo "Failed to install lxd. Ending program."
 	exit 1
 	fi
 fi
-#lxd software install complete
+# lxd software install complete
 
-# check to see if lxdbr0 inerface exists
-# Listing all interfaces and searching for lxdbr0
+# Use the ifconfig command to determine if the lxdbr0 interface exists
 ifconfig | grep -w "lxdbr0" > /dev/null
-
-# if the test value of grep "lxdbr0" is not 0, need to run lxd init --auto
 if [ $? -ne 0 ]; then
-	echo "Creating lxdbr0 interface"
-	lxd init --auto
+# Need to create lxdbr0 interface
+	echo "Creating the lxdbr0 interface..."
+	echo
+	lxd init --auto 
 	if [ $? -ne 0 ]; then
-		# failed to start interactive configuration process
-		echo "Failed to start interactive configuration process"
+	# Failed to create the lxdbr0 interface
+		echo "Failed to start interactive configuration process. Ending program."
 		exit 1
 	fi
+# If interface is already installed	
 else
-	echo "lxdbr0 interface found on machine"
+	echo "lxdbr0 interface located..."
+	echo
 fi
 
-# Launch a container running Ubuntu 20.04 server named COMP2101-F22 if necessary
+# List containers to determine if COMP2101-F22 exists and is running
 lxc list | grep -w "COMP2101-F22 | RUNNING" > /dev/null
 if [ $? -ne 0 ]; then
-	echo "Launching Ubuntu container named COMP2101-F22"
-	lxc launch ubuntu:20.04 COMP2101-F22
+# Need to create container COMP2101-F22
+lxc launch ubuntu:20.04 COMP2101-F22
 	if [ $? -ne 0 ]; then
-		echo "Failed to launch Ubuntu 20.04 container"
+	# Failed container creation
+		echo "Failed to create the COMP2101-F22 container. Ending program."
 		exit 1
 	fi
 fi
 
-
-# Collecting the IPv4 address from the COMP2101-F22 Container
-# containerIP grabs the 4th line down, 6th object from the left
-# old command that worked: containerIP=$(lxc list | awk 'FNR == 4 {print $6}')
-
-# Grab the line with the container named COMP2101-F22, print the 6th object (IP address, and store it in a variable)
-# On first-time running the script, the container IP has not yet been configured so awk picks the 6th element undesired. Setting a sleep timer for DHCP to give container an IP.
+# Sleep the script for 5 seconds to allow the container to be assigned an IP address
+echo "Collecting container information..."
+echo
 sleep 5
-containerIP=$(lxc list | grep -w "COMP2101-F22" | awk '{print $6}')
 
-# containerHostname stores the hostname of the container in a variable
+# Store the container IP address and container hostname as variables
+containerIP=$(lxc list | grep -w "COMP2101-F22" | awk '{print $6}')
 containerHostname=$(lxc list | grep -w "COMP2101-F22" | awk '{print $2}')
 
-# Combine the IP and hostname of the container into one variable
-# Spacing the variables to match the spacing format of /etc/hosts (1 space + tab)
+# Combine the variables into a single variable to write to /etc/hosts (1 space + tab)
 containerInfo="$containerIP 	$containerHostname"
 
-# Add or update the /etc/hosts for hostname COMP2101-F22 with the container's current IP address if neccessary
-
-# Checking if the container is already in /etc/hosts
+# Determine if the container with the current IP exists in /etc/hosts
 grep "$containerInfo" /etc/hosts > /dev/null
-
-# If container is not in /etc/hosts, add it to the first line using the $containerInfo
 if [ $? -ne 0 ]; then
-	echo "Adding the container COMP2101-F22 to the first line of /etc/hosts. Elevated permissions may be required."
-	sudo chmod 646 /etc/hosts
+# Need to create/update the entry in /etc/hosts for COMP2101-F22 container
+	echo "Creating/Updating the entry in /etc/hosts for COMP2101-F22 container"
+	echo
+	echo "Elevated permissions may be required"
 	sudo sed -i "1i$containerInfo" /etc/hosts
+	if [ $? -ne 0 ]; then
+	# Adding the entry to /etc/hosts failed
+		echo "The program could not add the container entry to /etc/hosts. Ending program."
+		exit  1
+	fi
+else
+	echo "Container entry exists in /etc/hosts"
+	echo
 fi
 
 # Test if Apache2 is installed in the COMP2101-F22 container
-lxc exec COMP2101-F22 whereis apache2 > /dev/null
-
-# Install Apache2 in the container if necessary ; # lxc exec COMP2101-F22 ; lets us doing anything inside the container
+lxc exec COMP2101-F22 which apache2 > /dev/null
 if [ $? -ne 0 ]; then
-	# Need to install apache2 in container
-	lxc exec COMP2101-F22 apt-get install apache2
+# Need to install Apache2 in the COMP2101-F22 container
+	echo "Installing Apache2..."
+	lxc exec COMP2101-F22 -- apt-get -y install apache2 &> /dev/null
 	if [ $? -ne 0 ]; then
-	#failed to install apache2 - exit with error message and status
+	# Failed to install apache2 - exit with error message and status
 	echo "Failed to install apache2"
+	exit 1
+	fi
+else
+	echo "Apache2 already installed"
+fi
+
+# Use the which command to see if curl exists on the system
+which curl > /dev/null
+if [ $? -ne 0 ]; then
+# Need to install curl
+	echo "Installing curl..."
+	sudo snap install curl > /dev/null
+	if [ $? -ne 0 ]; then
+	# Failed to install curl - exit with error message and status
+	echo "Failed to install curl. Ending program."
 	exit 1
 	fi
 fi
 
-# Retrieve the default web page from the container's web service with curl htp://COMP2101-F22 and notify the user of success or failure
+# Retrieve the default web page from the COMP2101-F22 container Apache server
+echo "Attempting to retrieve the default web page from the COMP2101-F22 Apache2 Server"
+curl http://COMP2101-F22 &> /dev/null
+
+if [ $? -ne 0 ]; then
+# Tell the user that the default web page could not be retrieved
+	echo "There was a problem retrieving the default web page from the COMP2101-F22 container's web service."
+	echo
+	echo "Script Status: FAILURE"
+	exit 1
+else
+# Tell the user that the default web page was successfully retrieved
+	echo  "The default web page was successfully retrieved from the COMP2101-F22 container web service"
+	echo
+	echo "Script Status: SUCCESS"
+fi
