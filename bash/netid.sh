@@ -9,9 +9,6 @@
 #   External IP   : 1.2.3.4
 #   External Name : some.name.from.our.isp
 
-# the LAN info in this script uses a hardcoded interface name of "eno1"
-#    - change eno1 to whatever interface you have and want to gather info about in order to test the script
-
 # TASK 1: Accept options on the command line for verbose mode and an interface name - must use the while loop and case command as shown in the lesson - getopts not acceptable for this task
 #         If the user includes the option -v on the command line, set the variable $verbose to contain the string "yes"
 #            e.g. network-config-expanded.sh -v
@@ -23,10 +20,8 @@
 # Need to use an array becuase we do not know how many there will be (or a wordlist he says)
 # use grep and awk for the second item on every line...
 # for interface in (interface list), surround it around the part of code that takes the interface name
-################
-# command line processing
-################
 
+# Command line processing
 while [ $# -gt 0 ]; do
 # case statement to process the command line
 	case "$1" in
@@ -100,22 +95,22 @@ interfaceArray=($(ifconfig | grep -w BROADCAST | awk '{print $1}' | cut -d ':' -
 # The interface variable is created in the for loop, and will iterate through interfaceArray per each interface
 for interface in $interfaceArray; do
 
- [ "$verbose" = "yes" ] && echo "Reporting on interface(s): $interface"
+	[ "$verbose" = "yes" ] && echo "Reporting on interface(s): $interface"
 
-[ "$verbose" = "yes" ] && echo "Getting IPV4 address and name for interface $interface"
-# Find an address and hostname for the interface being summarized
-# we are assuming there is only one IPV4 address assigned to this interface
-ipv4_address=$(ip a s $interface|awk -F '[/ ]+' '/inet /{print $3}')
-ipv4_hostname=$(getent hosts $ipv4_address | awk '{print $2}')
+	[ "$verbose" = "yes" ] && echo "Getting IPV4 address and name for interface $interface"
+	# Find an address and hostname for the interface being summarized
+	# we are assuming there is only one IPV4 address assigned to this interface
+	ipv4_address=$(ip a s $interface|awk -F '[/ ]+' '/inet /{print $3}')
+	ipv4_hostname=$(getent hosts $ipv4_address | awk '{print $2}')
 
-[ "$verbose" = "yes" ] && echo "Getting IPV4 network block info and name for interface $interface"
-# Identify the network number for this interface and its name if it has one
-# Some organizations have enough networks that it makes sense to name them just like how we name hosts
-# To ensure your network numbers have names, add them to your /etc/networks file, one network to a line, as   networkname networknumber
-#   e.g. grep -q mynetworknumber /etc/networks || (echo 'mynetworkname mynetworknumber' |sudo tee -a /etc/networks)
-network_address=$(ip route list dev $interface scope link|cut -d ' ' -f 1)
-network_number=$(cut -d / -f 1 <<<"$network_address")
-network_name=$(getent networks $network_number|awk '{print $1}')
+	[ "$verbose" = "yes" ] && echo "Getting IPV4 network block info and name for interface $interface"
+	# Identify the network number for this interface and its name if it has one
+	# Some organizations have enough networks that it makes sense to name them just like how we name hosts
+	# To ensure your network numbers have names, add them to your /etc/networks file, one network to a line, as   networkname networknumber
+	#   e.g. grep -q mynetworknumber /etc/networks || (echo 'mynetworkname mynetworknumber' |sudo tee -a /etc/networks)
+	network_address=$(ip route list dev $interface scope link|cut -d ' ' -f 1)
+	network_number=$(cut -d / -f 1 <<<"$network_address")
+	network_name=$(getent networks $network_number|awk '{print $1}')
 
 cat <<EOF
 
