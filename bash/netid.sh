@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 # this script displays some host identification information for a Linux machine
 #
 # Sample output:
@@ -31,7 +31,7 @@ while [ $# -gt 0 ]; do
 # case statement to process the command line
 	case "$1" in
 		-h | --help )
-			echo "Usage: $(basename $0) [-v | --verbose] "[interfacename]""
+			echo "Usage: $(basename $0) [-v | --verbose] [interfacename]"
 			exit
 			;;
 		-v | --verbose )
@@ -94,15 +94,13 @@ EOF
 # Per-interface report
 #####
 
-# define the interface being summarized
-if [ "myInterfaceName" != "" ]; then
-	interface=$myInterfaceName
-	else
-	interface=ens33
-fi
+# Dynamically identify the interfaces that will run through the script
+interfaceArray=($(ifconfig | grep -w BROADCAST | awk '{print $1}' | cut -d ':' -f 1))
 
-interface="ens33"
-[ "$verbose" = "yes" ] && echo "Reporting on interface(s): $interface"
+# The interface variable is created in the for loop, and will iterate through interfaceArray per each interface
+for interface in $interfaceArray; do
+
+ [ "$verbose" = "yes" ] && echo "Reporting on interface(s): $interface"
 
 [ "$verbose" = "yes" ] && echo "Getting IPV4 address and name for interface $interface"
 # Find an address and hostname for the interface being summarized
@@ -129,6 +127,8 @@ Network Address : $network_address
 Network Name    : $network_name
 
 EOF
+
+done
 #####
 # End of per-interface report
 #####
