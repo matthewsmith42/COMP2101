@@ -15,23 +15,38 @@
 # Usage:
 #   error-message ["some text to print to stderr"]
 function error-message {
-
+	echo "Error found running script. Appended to stderr log."
+		2> >(logger -t $(basename "$0") -i -p sysconfigerror.log)
 }
 
 # This function will send a message to stderr and exit with a failure status
 # Usage:
 #   error-exit ["some text to print to stderr" [exit-status]]
 function error-exit {
-
+	echo "Error found running the script, exiting with status 10"
+	2> >(logger -t $(basename "$0") -i -p sysconfigerror.log)
+	exit 10
 }
+
 #This function displays help information if the user asks for it on the command line or gives us a bad command line
 function displayhelp {
+	if [ $? -ne 0 ]; then
+		echo "You need help using this script"
+		exit 1
+	fi
 
 }
 
 # This function will remove all the temp files created by the script
 # The temp files are all named similarly, "/tmp/somethinginfo.$$"
 # A trap command is used after the function definition to specify this function is to be run if we get a ^C while running
+function removetempfiles {
+	rm /tmp/*.$$
+	logger -t $(basename "$0") -i -p user.info -s "Deleting temporary files and aborting"
+	exit 1
+}
+
+trap cleanup SIGINT
 
 # End of section to be done for TASK
 # Remainder of script does not require any modification, but may need to be examined in order to create the functions for TASK
