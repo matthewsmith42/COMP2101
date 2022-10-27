@@ -16,7 +16,7 @@
 #   error-message ["some text to print to stderr"]
 function error-message {
 	echo "Error found running script. Appended to stderr log."
-		2> >(logger -t $(basename "$0") -i -p sysconfigerror.log)
+		2> >(logger -t $(basename "$0") -i -p user.warning)
 }
 
 # This function will send a message to stderr and exit with a failure status
@@ -24,7 +24,7 @@ function error-message {
 #   error-exit ["some text to print to stderr" [exit-status]]
 function error-exit {
 	echo "Error found running the script, exiting with status 10"
-	2> >(logger -t $(basename "$0") -i -p sysconfigerror.log)
+	2> >(logger -t $(basename "$0") -i -p user.warning)
 	exit 10
 }
 
