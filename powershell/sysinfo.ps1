@@ -1,45 +1,96 @@
 # PowerShell Lab 4 Script
 # This script collects and reports system information
-# eg. get-wmiobject win32_networkadapter)[0, 2, 5] ; we dont get errors for empty index values.
-# we can use (get-wmiobject win32_networkadapter).count to know number of index. We can assign a collection to a variable
 
 # Collecting system hardware description (win32_computersystem)
-$osDescription = Get-WmiObject -Class win32_computersystem | Format-List Description
+function osDescription {
+    gwmi win32_computersystem | Format-List Description
+}
+
+osDescription
 
 # Collecting OS name and version number (win32_operatingsystem)
-$osNameVersion = Get-WmiObject -Class win32_operatingsystem | Format-List -Property @{n ="OSName";E={$_.Caption}}, Version
+function osNameVersion {
+    gwmi win32_operatingsystem | Format-List @{n ="OS Name";e={$_.Caption}}, Version
+}
+
+osNameVersion
 
 # Collecting processor description with speed, number of cores and sizes of the L1, L2, L3 caches if they are present (win32_processor)
-$processorInfo = Get-WmiObject -Class win32_processor | format-list -property CurrentClockSpeed, NumberOfCores
-$cacheSizes = gwmi win32_processor | fl L1CacheSize, L2CacheSize, L3CacheSize
+function processorInfo {
+    $cacheOne = (gwmi win32_processor).L1CacheSize
+    if ($cacheOne -eq $null) {
+        $cacheOne = "Empty / Does not exist"
+    }
 
-# Collecting RAM summary (vendor, description, size, bank and slot for each DIMM REFER SLIDE !!
-# Report as a table, and the total RAM installed as a summary line after the table
-# (win32_physicalmemory)
-$totalcapacity = 0
-function ramInfo {
-    get-wmiobject -class win32_physicalmemory | 
+    $cacheTwo = (gwmi win32_processor).L2CacheSize
+    if ($cacheTwo -eq $null) {
+        $cacheTwo = "Empty / Does not exist"
+    }
+    
+    $cacheThree = (gwmi win32_processor).L3CacheSize
+    if ($cacheThree -eq $null) {
+        $cacheThree = "Empty / Does not exist"
+    }
+
+    gwmi win32_processor | fl @{n = "Current Clock Speed (GHz)"; e= {$_.CurrentClockSpeed}}, NumberOfCores, 
+    @{n = "L1 Cache Size (bytes)";e = {$cacheOne}},
+    @{n = "L2 Cache Size (bytes)";e = {$cacheTwo}}, 
+    @{n = "L3 Cache Size (bytes)";e= {$cacheThree}}
+}
+
+processorInfo
+
+# Collecting RAM summary (win32_physicalmemory) (vendor, description, size, bank and slot for each DIMM
+# Reporting as a table, and the total RAM installed as a summary line after the table
+function ramSummary {
+    $totalcapacity = 0
+    gwmi win32_physicalmemory | 
     foreach {
         new-object -TypeName psobject -Property @{
         Manufacturer = $_.manufacturer
         "Speed(MHz)" = $_.speed
         "Size(MB)" = $_.capacity/1mb
-         Bank = $_.banklabel
-         Slot = $_.devicelocator
-         }
-         $totalcapacity += $_.capacity/1mb
+        Bank = $_.banklabel
+        Slot = $_.devicelocator
         }
+    $totalcapacity += $_.capacity/1mb
+    } |
+    ft -auto Manufacturer, "Size(MB)", "Speed(MHz)", Bank, Slot
+    "Total RAM: ${totalcapacity}MB "
 }
-ft -auto Manufacturer, "Size(MB)", "Speed(MHz)", Bank, Slot
-"Total RAM: ${totalcapacity}MB "
+
+ramSummary
 
 # Include summary of disk drives (vendor, model, size, and percentage free) as a table
-# Need to use nested loop (on github site)
+ function diskSummary { 
+  $diskdrives = Get-CIMInstance CIM_diskdrive
 
-# Include lab 3 network adapter script
+  foreach ($disk in $diskdrives) {
+      $partitions = $disk|get-cimassociatedinstance -resultclassname CIM_diskpartition
+      foreach ($partition in $partitions) {
+            $logicaldisks = $partition | get-cimassociatedinstance -resultclassname CIM_logicaldisk
+            foreach ($logicaldisk in $logicaldisks) {
+                     new-object -typename psobject -property @{Manufacturer=$disk.Manufacturer
+                                                               Location=$partition.deviceid
+                                                               Drive=$logicaldisk.deviceid
+                                                               "Size(GB)"=$logicaldisk.size / 1gb -as [int]
+                                                               }
+           }
+      }
+  }
+}
+
+diskSummary
+
+# Including lab 3 network adapter configuration report script 
+C:\Users\Matthew\Documents\GitHub\COMP2101\powershell\ipconfigreport.ps1
 
 # Include video card vendor, description, and current resolution (horizontal x vertical) (win32_videocontroller)
-[string]$Horizontal = $(gwmi win32_videocontroller).CurrentHorizontalResolution
-[string]$Vertical = $(gwmi win32_videocontroller).CurrentVerticalResolution
+function videoSummary {
+    [string]$horizontalres = $(gwmi win32_videocontroller).CurrentHorizontalResolution
+    [string]$verticalres = $(gwmi win32_videocontroller).CurrentVerticalResolution
+    $screenres = $horizontalres + ' x ' + $verticalres
+    gwmi win32_videocontroller | Fl @{n ="Vendor";e={$_.AdapterCompatibility}}, Description, @{n = 'Screen Resolution'; e = {$screenres}}
+}
 
-$Resolution = $Horizontal + 'x' + $Vertical; $test
+videoSummary
