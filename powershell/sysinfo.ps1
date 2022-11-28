@@ -3,6 +3,7 @@
 
 # Collecting system hardware description (win32_computersystem)
 function osDescription {
+    "=== Operating System Hardware Description ==="
     gwmi win32_computersystem | Format-List Description
 }
 
@@ -10,6 +11,7 @@ osDescription
 
 # Collecting OS name and version number (win32_operatingsystem)
 function osNameVersion {
+    "=== Operating System Name and Version ==="
     gwmi win32_operatingsystem | Format-List @{n ="OS Name";e={$_.Caption}}, Version
 }
 
@@ -17,6 +19,7 @@ osNameVersion
 
 # Collecting processor description with speed, number of cores and sizes of the L1, L2, L3 caches if they are present (win32_processor)
 function processorInfo {
+    "=== Processor Information ==="
     $cacheOne = (gwmi win32_processor).L1CacheSize
     if ($cacheOne -eq $null) {
         $cacheOne = "Empty / Does not exist"
@@ -43,6 +46,7 @@ processorInfo
 # Collecting RAM summary (win32_physicalmemory) (vendor, description, size, bank and slot for each DIMM
 # Reporting as a table, and the total RAM installed as a summary line after the table
 function ramSummary {
+    "=== RAM Information ==="
     $totalcapacity = 0
     gwmi win32_physicalmemory | 
     foreach {
@@ -62,7 +66,8 @@ function ramSummary {
 ramSummary
 
 # Include summary of disk drives (vendor, model, size, and percentage free) as a table
- function diskSummary { 
+ function diskSummary {
+    "=== Disk Information ===" 
   $diskdrives = Get-CIMInstance CIM_diskdrive
 
   foreach ($disk in $diskdrives) {
@@ -82,11 +87,17 @@ ramSummary
 
 diskSummary
 
-# Including lab 3 network adapter configuration report script 
-C:\Users\Matthew\Documents\GitHub\COMP2101\powershell\ipconfigreport.ps1
+# Including lab 3 network adapter configuration report script
+function networkSummary {
+    "=== Network Information ==="
+    C:\Users\Matthew\Documents\GitHub\COMP2101\powershell\ipconfigreport.ps1
+}
+
+networkSummary
 
 # Include video card vendor, description, and current resolution (horizontal x vertical) (win32_videocontroller)
 function videoSummary {
+    "=== Display Information ==="
     [string]$horizontalres = $(gwmi win32_videocontroller).CurrentHorizontalResolution
     [string]$verticalres = $(gwmi win32_videocontroller).CurrentVerticalResolution
     $screenres = $horizontalres + ' x ' + $verticalres
